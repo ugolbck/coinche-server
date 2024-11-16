@@ -1,0 +1,30 @@
+services:
+  app:
+    image: ghcr.io/astral-sh/uv:latest-python3.12-slim
+    volumes:
+      - .:/app
+      - /app/.venv
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - DEBUG=True
+      - UV_SYSTEM_PYTHON=1
+      - UV_PROJECT_ENVIRONMENT=/app/.venv-compose
+      - UV_COMPILE_BYTECODE=1
+      - UV_LINK_MODE=copy
+    command: >
+      sh -c "
+      cd /app;
+      uv sync --frozen;
+      uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+      "
+
+  pgadmin:
+    ports:
+      - "5050:80"
+
+  db:
+    ports:
+      - "5432:5432"

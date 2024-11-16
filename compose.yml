@@ -1,0 +1,60 @@
+services:
+  db:
+    container_name: postgresql-${ENV}
+    image: postgres
+    restart: always
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_USER=${PG_USERNAME}
+      - POSTGRES_PASSWORD=${PG_PASSWORD}
+      - POSTGRES_DB=${PG_DATABASE}
+    ports:
+      - ${PG_PORT}:5432
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data
+    networks:
+      - app_network
+
+
+  pgadmin:
+    container_name: pgadmin-${ENV}
+    image: dpage/pgadmin4
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_EMAIL}
+      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_PASSWORD}
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    depends_on:
+      - db
+    # We specify a static IP within the app_network so that Nginx can reach PgAdmin from outside the Compose network
+    networks:
+      app_network:
+        ipv4_address: ${PGADMIN_IP}
+
+  app:
+    container_name: app-${ENV}
+    image: ${APP_REGISTRY_URL}/${APP_IMAGE_NAME}:${APP_IMAGE_TAG}
+    restart: always
+    env_file: .env
+    # The following implies that the app is located in the /app directory of the Docker image, in the main.py file
+    # It also implies that Alembic is used to manage the database migrations
+    command: |
+      sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port ${APP_PORT}"
+    depends_on:
+      - db
+    # We specify a static IP within the app_network so that Nginx can reach the app from outside the Compose network
+    networks:
+      app_network:
+        ipv4_address: ${APP_IP}
+
+volumes:
+  postgres_data:
+  pgadmin-data:
+
+networks:
+  app_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: ${NETWORK_SUBNET}

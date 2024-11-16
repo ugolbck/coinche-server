@@ -1,0 +1,12 @@
+[project]
+name = "coinche-server"
+version = "0.1.0"
+description = "A server for the Coinche game"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115.5",
+    "pydantic-settings>=2.6.1",
+    "uvicorn>=0.32.0",
+    "websockets>=14.1",
+]
