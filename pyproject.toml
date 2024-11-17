@@ -7,6 +7,7 @@ requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.115.5",
     "pydantic-settings>=2.6.1",
+    "terminal-playing-cards>=0.1.0",
     "uvicorn>=0.32.0",
     "websockets>=14.1",
 ]
