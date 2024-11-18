@@ -64,20 +64,20 @@ class Game:
 
         self.team_a: Team | None = None
         self.team_b: Team | None = None
-        self._create_teams()
 
         self.round = 0
 
     
     async def init_game(self):
+        await self.create_teams()
         self.deck = Deck()
         self.deck.shuffle()
-        self.deal_cards()
+        await self.deal_cards()
         self.state = "cards_dealt"
         self.turn = 0
         await self.send_cards_to_players()
 
-    def deal_cards(self):
+    async def deal_cards(self):
         # Deal three cards to each players
         for player in self.players:
             print(f"Dealing 3 cards to {player.name}")
@@ -99,16 +99,25 @@ class Game:
         # Assert that the deck is empty and each player has 8 cards
         assert all(len(player.cards) == 8 for player in self.players)
     
-    def _create_teams(self):
+    async def create_teams(self):
         assert len(self.players) == 4
         random.shuffle(self.players)
         self.team_a = Team((self.players[0], self.players[1]))
         self.team_b = Team((self.players[2], self.players[3]))
 
+        # For each player, send the name of the teammate, of the left opponent and of the right opponent
+        for player in self.players:
+            teammate = self.team_a.players[0] if player == self.team_a.players[1] else self.team_a.players[1]
+            left_opponent = self.team_b.players[0] if player == self.team_b.players[1] else self.team_b.players[1]
+            right_opponent = self.team_b.players[0] if player == self.team_a.players[1] else self.team_a.players[1]
+            await player.websocket.send_text(f"teammate:{teammate.name}")
+            await player.websocket.send_text(f"left_opponent:{left_opponent.name}")
+            await player.websocket.send_text(f"right_opponent:{right_opponent.name}")
+
     async def send_cards_to_players(self):
         for player in self.players:
-            view = View(player.cards)
+            view = View(player.cards, spacing=-5)
             print(f"Sending cards to {player.name}")
-            print(type(view))
             print(view)
-            await player.websocket.send_text(str(view))
+            text_to_send = f"cards:{str(view)}"
+            await player.websocket.send_text(text_to_send)
